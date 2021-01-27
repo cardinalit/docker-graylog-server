@@ -1,0 +1,77 @@
+---
+version: '3.7'
+
+volumes:
+  mongo-01_data:
+  els-01_data:
+  ui_api_data:
+
+secrets:
+  GRAYLOG_ROOT_PASSWORD_SHA2:
+    file: ./graylog/secrets/GRAYLOG_ROOT_PASSWORD_SHA2.txt
+  GRAYLOG_PASSWORD_SECRET:
+    file: ./graylog/secrets/GRAYLOG_PASSWORD_SECRET.txt
+
+services:
+  mongo-01:
+    image: mongo:4.2
+    hostname: graylog-mongo-01
+    volumes:
+      - mongo-01_data:/data/db
+    networks:
+      default:
+        aliases:
+          - mongo-01.local
+    deploy:
+      restart_policy:
+        condition: any
+
+  els-01:
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.0
+    hostname: graylog-els-01
+    environment:
+      http.host:      "0.0.0.0"
+      transport.host: "localhost"
+      network.host:   "0.0.0.0"
+      ES_JAVA_OPTS:   "-Xms10g -Xmx10g"
+    networks:
+      default:
+        aliases:
+          - els-01.local
+    volumes:
+      - els-01_data:/usr/share/elasticsearch/data
+    deploy:
+      restart_policy:
+        condition: any
+
+  ui-api:
+    image: graylog/graylog:4.0
+    hostname: graylog-ui-api-01
+    volumes:
+      - ui_api_data:/usr/share/graylog/data
+      - ./graylog/graylog.conf.d:/usr/share/graylog/data/config
+    secrets:
+      - GRAYLOG_ROOT_PASSWORD_SHA2
+      - GRAYLOG_PASSWORD_SECRET
+    ports:
+      # Graylog web interface and REST API
+      - target: 9000
+        published: 9000
+        mode: host
+      # Syslog TCP
+      - 1514:1514/tcp
+      # Syslog UDP
+      - 1514:1514/udp
+      # GELF TCP
+      - 12201-12210:12201-12210/tcp
+      # GELF UDP
+      - 12201-12210:12201-12210/udp
+    env_file:
+      - .env
+    environment:
+      GRAYLOG_ROOT_TIMEZONE:            "Europe/Moscow"
+      GRAYLOG_ELASTICSEARCH_HOSTS:      "http://els-01.local:9200"
+      GRAYLOG_MONGODB_URI:              "mongodb://mongo-01.local/graylog"
+    deploy:
+      restart_policy:
+        condition: any
