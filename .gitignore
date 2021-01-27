@@ -1,0 +1,26 @@
+# OS generated
+.AppleDouble
+.DS_Store
+
+# IDEA generated
+.idea
+
+# Log files and temporary files
+*.log
+*.swp
+*.pid
+
+###############################
+
+# App generated
+graylog/data/logs
+graylog/data/ssh_host_keys/ssh_host*
+graylog/data/.bash_history
+graylog/secrets/*.txt
+
+# File configuration
+docker-compose.yml
+graylog.env
+
+# Exclude the important files
+!configs/*
